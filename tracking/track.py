@@ -6,7 +6,7 @@ import numpy as np
 from ultralytics import YOLO
 
 # 1. Configuration
-video_name = "parkinglot2.mp4"
+video_name = "accident2.mp4"
 video_path = f"datasets/{video_name}"
 # Ensure output directory exists
 os.makedirs("results", exist_ok=True)

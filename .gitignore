@@ -6,3 +6,5 @@
 *.webm
 *.flv
 *.wmv
+# --- Ignore .pt files ---
+*.pt
