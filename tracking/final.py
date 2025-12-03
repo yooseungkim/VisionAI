@@ -182,7 +182,7 @@ def check_point_in_zones(point, zones):
 # --- Main Logic ---
 cap = cv2.VideoCapture(video_path)
 FPS = cap.get(cv2.CAP_PROP_FPS) or 30.0
-model = YOLO("yolo11n-seg.pt")
+model = YOLO("yolo11m-seg.pt")
 
 # GUI Phase 1 & 2
 cv2.namedWindow("Setup")

@@ -69,7 +69,7 @@ cap = cv2.VideoCapture(video_path)
 FPS = cap.get(cv2.CAP_PROP_FPS)
 if FPS == 0:
     FPS = 30.0
-model = YOLO("yolo11n-seg.pt")
+model = YOLO("yolo11m-seg.pt")
 
 # Calibration
 cv2.namedWindow("Calibration")
