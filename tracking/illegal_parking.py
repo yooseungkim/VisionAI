@@ -6,6 +6,10 @@ import cv2
 import numpy as np
 from ultralytics import YOLO
 
+# Calibration & Zone (기존 동일)
+    CALIB_SRC_PTS = np.array([(459, 835), (714, 760), (976, 819), (668, 919)], dtype=np.float32)
+    CALIB_DST_PTS = np.array([[0, 0], [2.5, 0], [2.5, 5.0], [0, 5.0]], dtype=np.float32)
+    ILLEGAL_ZONE_POLY = np.array([(1887, 582), (6, 1152), (263, 1722), (2278, 641)], dtype=np.int32)
 # --- Configuration ---
 video_name = "parking1.mp4"
 video_path = f"datasets/{video_name}"
