@@ -1,0 +1,17 @@
+
+Evaluating: events_parking7.jsonl against events_parking7.jsonl
+Loaded 4 GT events and 4 Pred events.
+==========================================================================================
+Event Type         | Start    | Dur    | t-IoU    | GT Risk  | Pred Risk | Diff
+------------------------------------------------------------------------------------------
+vehicle_started    | 145      | 50     | 0.82     | -        | -        | -
+safety_analysis    | 145      | 125    | 0.92     | 2        | 3        | 1
+safety_analysis    | 275      | 125    | 0.85     | 2        | 2        | 0
+safety_analysis    | 405      | 55     | 0.79     | 2        | 2        | 0
+==========================================================================================
+ [ Final Report ]
+ -> Average t-IoU (All GT) : 0.8447
+ -> Matched Events count   : 3/4
+ -> Risk MAE (Matched)     : 0.3333
+==========================================================================================
+

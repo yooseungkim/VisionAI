@@ -1,4 +1,5 @@
 import os
+import sys
 import time
 import threading
 import subprocess
@@ -7,6 +8,7 @@ import cv2
 import json
 import numpy as np
 import torch
+import argparse 
 from queue import Queue, Empty
 from ultralytics import YOLO
 
@@ -14,40 +16,36 @@ from ultralytics import YOLO
 # 1. Configuration (Tuned for Fast Reaction)
 # ==========================================
 class Config:
-    # 파일 경로
-    VIDEO_NAME = "parking7.mp4"
-    INPUT_PATH = f"datasets/{VIDEO_NAME}"
+    # [변경] 파일 경로 관련 설정은 제거하고 로직 파라미터만 유지
     OUTPUT_DIR = "results"
-    TEMP_OUTPUT = f"{OUTPUT_DIR}/temp_{VIDEO_NAME}"
-    FINAL_OUTPUT = f"{OUTPUT_DIR}/final_analysis_{VIDEO_NAME}"
-    LOG_OUTPUT = f"{OUTPUT_DIR}/events_{VIDEO_NAME}.jsonl"
-
-    MODEL_WEIGHTS = "yolo11m-seg.pt"
+    
+    MODEL_WEIGHTS = "yolo11s-seg.pt"
     CLASSES_TO_TRACK = [0, 2, 3, 5, 7]
     BATCH_SIZE = 5
 
-# Calibration & Zone (기존 동일)
+    # Calibration & Zone (기존 동일)
+    # 주의: 영상이 바뀌면 Calibration 좌표와 Zone 좌표도 사실 해당 영상에 맞춰야 합니다.
+    # 현재는 요청하신 대로 소스 경로만 동적으로 변경합니다.
     CALIB_SRC_PTS = np.array([(459, 835), (714, 760), (976, 819), (668, 919)], dtype=np.float32)
     CALIB_DST_PTS = np.array([[0, 0], [2.5, 0], [2.5, 5.0], [0, 5.0]], dtype=np.float32)
-    # ILLEGAL_ZONE_POLY = np.array([(1887, 582), (6, 1152), (263, 1722), (2278, 641)], dtype=np.int32)
-    ILLEGAL_ZONE_POLY = np.array([[0,0]]) # 불법주차구역 없이 
+    ILLEGAL_ZONE_POLY = np.array([[0,0]]) # 불법주차구역 (필요 시 수정)
+
     # [Logic Parameters - Tuned]
-    # 반응성을 높이기 위해 점수 스케일을 줄였습니다.
-    MAX_SCORE = 200           # 최대 점수 (너무 높으면 멈춤 감지가 느림)
-    START_THRESH = 20        # 이 점수를 넘으면 출발 (약 0.5~1초 이동 시)
-    STOP_THRESH = 5          # 이 점수 아래면 정지 (약 2초 정지 시)
+    MAX_SCORE = 200           
+    START_THRESH = 20        
+    STOP_THRESH = 5          
     
-    SCORE_INC = 4            # 움직임 감지 시 +2
-    SCORE_DEC_NORMAL = 1     # 정지 감지 시 -2 (감소 속도 2배 향상)
-    SCORE_DEC_OCCLUDED = 0.5 # 가려지면 천천히 감소
+    SCORE_INC = 4            
+    SCORE_DEC_NORMAL = 1     
+    SCORE_DEC_OCCLUDED = 0.5 
     
-    MOVE_THRESH_METER = 0.25 # 0.2초간 0.25m 이동하면 움직임으로 간주
+    MOVE_THRESH_METER = 0.25 
     
     GLITCH_AREA_RATIO = 1.3
     GLITCH_SPEED_LIMIT = 50.0
 
     ILLEGAL_LIMIT_SEC = 5.0
-    LOCK_DURATION = 10 # 상태 변경 후 3사이클(약 0.6초) 고정
+    LOCK_DURATION = 10 
 
 # ==========================================
 # 2. Helper Classes
@@ -235,28 +233,42 @@ class TrackedActor:
 # 4. Main System Controller
 # ==========================================
 class ParkingSurveillanceSystem:
-    def __init__(self):
+    def __init__(self, source_path):
+        # [변경] 초기화 시 source_path를 받음
+        self.source_path = source_path
+        
+        if not os.path.exists(self.source_path):
+            raise FileNotFoundError(f"Video not found: {self.source_path}")
+
+        # [변경] 입력 파일명을 기반으로 출력 경로 동적 생성
+        video_name = os.path.basename(self.source_path)
+        base_name = os.path.splitext(video_name)[0]
+        
+        os.makedirs(Config.OUTPUT_DIR, exist_ok=True)
+        self.log_path = os.path.join(Config.OUTPUT_DIR, f"logs/events_{base_name}.jsonl")
+        self.temp_path = os.path.join(Config.OUTPUT_DIR, f"videos/temp_{base_name}.mp4")
+        self.final_path = os.path.join(Config.OUTPUT_DIR, f"videos/{base_name}_result.mp4")
+
         device = 'cuda' if torch.cuda.is_available() else 'cpu'
         print(f"[*] Initializing on {device}...")
         self.model = YOLO(Config.MODEL_WEIGHTS).to(device)
         self.geo = GeometryEngine()
-        self.logger = EventLogger(Config.LOG_OUTPUT)
+        self.logger = EventLogger(self.log_path) # 동적 경로 사용
         self.actors = {} 
 
-        if not os.path.exists(Config.INPUT_PATH): raise FileNotFoundError(f"Video not found: {Config.INPUT_PATH}")
-        os.makedirs(Config.OUTPUT_DIR, exist_ok=True)
-        
-        self.cap_thread = VideoCaptureThread(Config.INPUT_PATH)
+        # [변경] 동적 소스 경로 사용
+        self.cap_thread = VideoCaptureThread(self.source_path)
         self.out_fps = self.cap_thread.fps / Config.BATCH_SIZE
         w, h = int(self.cap_thread.width), int(self.cap_thread.height)
         
-        self.temp_path = os.path.abspath(Config.TEMP_OUTPUT)
-        self.final_path = os.path.abspath(Config.FINAL_OUTPUT)
-        self.out = cv2.VideoWriter(self.temp_path, cv2.VideoWriter_fourcc(*'mp4v'), self.out_fps, (w, h))
+        # [변경] 절대 경로 변환 및 Writer 초기화
+        self.temp_path_abs = os.path.abspath(self.temp_path)
+        self.final_path_abs = os.path.abspath(self.final_path)
+        self.out = cv2.VideoWriter(self.temp_path_abs, cv2.VideoWriter_fourcc(*'mp4v'), self.out_fps, (w, h))
 
     def run(self):
-        print(f"🚀 Processing Started: Batch Size {Config.BATCH_SIZE}")
-        print(f"📄 Events will be logged to: {Config.LOG_OUTPUT}")
+        print(f"Processing Started: Batch Size {Config.BATCH_SIZE}")
+        print(f"Events will be logged to: {self.log_path}")
         
         frame_cnt_global = 0
         start_t = time.time()
@@ -351,17 +363,27 @@ class ParkingSurveillanceSystem:
         print("[*] Releasing resources...")
         if hasattr(self, 'cap_thread'): self.cap_thread.release()
         if hasattr(self, 'out'): self.out.release()
-        if os.path.exists(self.temp_path) and os.path.getsize(self.temp_path) > 0: self.convert_h264()
+        # [변경] self.temp_path_abs, self.final_path_abs 사용
+        if os.path.exists(self.temp_path_abs) and os.path.getsize(self.temp_path_abs) > 0: self.convert_h264()
 
     def convert_h264(self):
         print("[*] Converting to H.264...")
-        cmd = ["ffmpeg", "-y", "-i", self.temp_path, "-vcodec", "libx264", "-crf", "23", "-preset", "fast", "-an", self.final_path]
+        cmd = ["ffmpeg", "-y", "-i", self.temp_path_abs, "-vcodec", "libx264", "-crf", "23", "-preset", "fast", "-an", self.final_path_abs]
         try:
             subprocess.run(cmd, check=True)
-            print(f"[SUCCESS] Saved to: {self.final_path}")
-            if os.path.exists(self.temp_path): os.remove(self.temp_path)
+            print(f"[SUCCESS] Saved to: {self.final_path_abs}")
+            if os.path.exists(self.temp_path_abs): os.remove(self.temp_path_abs)
         except Exception as e: print(f"[ERROR] FFmpeg: {e}")
 
 if __name__ == "__main__":
-    sys = ParkingSurveillanceSystem()
-    sys.run()
+    # [추가] Argument Parsing Logic
+    parser = argparse.ArgumentParser(description="Parking Surveillance System")
+    parser.add_argument('--source', type=str, required=True, help='Path to the input video file (e.g., datasets/input.mp4)')
+    
+    args = parser.parse_args()
+    
+    try:
+        sys = ParkingSurveillanceSystem(source_path=args.source)
+        sys.run()
+    except Exception as e:
+        print(f"[FATAL ERROR] {e}")

@@ -1,0 +1,11 @@
+
+Evaluating: events_parking4.jsonl against events_parking4.jsonl
+Loaded 8 GT events and 1 Pred events.
+=====================================================================================
+Event Type                | Range (Frames)  | t-IoU    | Risk Diff 
+-------------------------------------------------------------------------------------
+=====================================================================================
+ [ Final Report ]
+ -> Average t-IoU (Recall) : 0.0000
+ -> Risk MAE               : N/A (Risk scores not found in data)
+=====================================================================================
