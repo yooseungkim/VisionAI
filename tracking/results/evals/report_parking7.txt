@@ -1,17 +1,12 @@
+Error: Failed to parse line 4 in /home/yooseung/workspace/VisionAI/tracking/datasets/logs/events_parking7.jsonl
 
 Evaluating: events_parking7.jsonl against events_parking7.jsonl
-Loaded 4 GT events and 4 Pred events.
-==========================================================================================
-Event Type         | Start    | Dur    | t-IoU    | GT Risk  | Pred Risk | Diff
-------------------------------------------------------------------------------------------
-vehicle_started    | 145      | 50     | 0.82     | -        | -        | -
-safety_analysis    | 145      | 125    | 0.92     | 2        | 3        | 1
-safety_analysis    | 275      | 125    | 0.85     | 2        | 2        | 0
-safety_analysis    | 405      | 55     | 0.79     | 2        | 2        | 0
-==========================================================================================
+Loaded 3 GT events and 1 Pred events.
+=====================================================================================
+Event Type                | Range (Frames)  | t-IoU    | Risk Diff 
+-------------------------------------------------------------------------------------
+=====================================================================================
  [ Final Report ]
- -> Average t-IoU (All GT) : 0.8447
- -> Matched Events count   : 3/4
- -> Risk MAE (Matched)     : 0.3333
-==========================================================================================
-
+ -> Average t-IoU (Recall) : 0.0000
+ -> Risk MAE               : N/A (Risk scores not found in data)
+=====================================================================================

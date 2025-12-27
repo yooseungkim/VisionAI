@@ -1,0 +1,1 @@
+{"timestamp": "10m 35s", "event": "Illegal_Parking", "start_frame": 15891, "end_frame": 16044, "real_start": 15966, "real_end": 15969, "duration_sec": 6.12, "risk_analysis": {}, "actors": [{"id": 753, "type": "Vehicle", "bbox": [417.3490905761719, 1147.48583984375, 806.3922119140625, 887.8699340820312], "center": [415, 1146]}]}
