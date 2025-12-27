@@ -19,7 +19,7 @@ RESULT_PRED_DIR   = os.path.join(BASE_DIR, "results", "preds")
 RESULT_EVAL_DIR   = os.path.join(BASE_DIR, "results", "evals")
 
 # Scripts
-SCRIPT_TRACK = os.path.join(BASE_DIR, "track.py")
+SCRIPT_TRACK = os.path.join(BASE_DIR, "track_save_video.py")
 SCRIPT_QUERY = os.path.join(BASE_DIR, "query.py")
 SCRIPT_EVAL  = os.path.join(BASE_DIR, "eval.py")
 
@@ -38,6 +38,8 @@ def run_command(command, description):
     except subprocess.CalledProcessError as e:
         print(f"❌ Error during {description}: {e}")
         return False
+ 
+
 
 def process_video(video_file, overwrite=False):
     video_name = video_file.name

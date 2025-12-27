@@ -24,7 +24,9 @@ class Config:
     # Calibration & Zone
     CALIB_SRC_PTS = np.array([(459, 835), (714, 760), (976, 819), (668, 919)], dtype=np.float32)
     CALIB_DST_PTS = np.array([[0, 0], [2.5, 0], [2.5, 5.0], [0, 5.0]], dtype=np.float32)
-    ILLEGAL_ZONE_POLY = np.array([[0,0]]) 
+    # ILLEGAL_ZONE_POLY = np.array([[0,0]]) 
+    # CH06
+    ILLEGAL_ZONE_POLY = [(1927, 584),(7, 1157),(250, 1749),(2307, 646)]
 
     # Logic Parameters
     MAX_SCORE = 200           
@@ -40,7 +42,7 @@ class Config:
     GLITCH_AREA_RATIO = 1.3
     GLITCH_SPEED_LIMIT = 50.0
 
-    ILLEGAL_LIMIT_SEC = 5.0
+    ILLEGAL_LIMIT_SEC = 20
     LOCK_DURATION = 10 
     
     # [NEW] Event Padding
@@ -156,6 +158,7 @@ class BufferedEventLogger:
 
         entry = {
             "event": event_type,
+    
             "start_frame": int(final_start),
             "end_frame": int(final_end),
             "real_start": int(data['start_frame']),
@@ -304,9 +307,9 @@ class ParkingSurveillanceSystem:
         
         os.makedirs(Config.OUTPUT_DIR, exist_ok=True)
         # 로그 파일명 (jsonl)
-        self.log_path = os.path.join(Config.OUTPUT_DIR, f"events_{base_name}.jsonl")
-        self.temp_path = os.path.join(Config.OUTPUT_DIR, f"temp_{base_name}.mp4")
-        self.final_path = os.path.join(Config.OUTPUT_DIR, f"{base_name}_result.mp4")
+        self.log_path = os.path.join(Config.OUTPUT_DIR, f"logs/events_{base_name}.jsonl")
+        self.temp_path = os.path.join(Config.OUTPUT_DIR, f"videos/temp_{base_name}.mp4")
+        self.final_path = os.path.join(Config.OUTPUT_DIR, f"videos/{base_name}_result.mp4")
 
         device = 'cuda' if torch.cuda.is_available() else 'cpu'
         print(f"[*] Initializing on {device}...")
